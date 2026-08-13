@@ -1,0 +1,28 @@
+{
+  "name": "chitrai-monorepo",
+  "version": "1.0.0",
+  "description": "Gamified Art Learning & Sketching Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "bootstrap": "npm install",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:ai": "npm run dev --workspace=apps/ai-service",
+    "build:frontend": "npm run build --workspace=apps/frontend",
+    "build:backend": "npm run build --workspace=apps/backend"
+  },
+  "keywords": [
+    "art",
+    "canvas",
+    "learning",
+    "stable-diffusion",
+    "controlnet",
+    "expo",
+    "react-native-web"
+  ],
+  "author": "",
+  "license": "MIT"
+}

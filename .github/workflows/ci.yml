@@ -1,0 +1,97 @@
+name: Chitrai CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ----------------------------------------------------
+  # FRONTEND BUILD & TEST JOB
+  # ----------------------------------------------------
+  frontend-ci:
+    name: Frontend CI (Expo / React Native Web)
+    runs-on: ubuntu-latest
+    # Only run if files in the frontend workspace or workspace configs change
+    if: |
+      github.event_name == 'push' || 
+      github.event.paths_filter.outputs.frontend == 'true'
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install Root & Workspace Dependencies
+        run: npm ci || npm install
+
+      # When source code is added, this can be expanded to run linting and testing
+      - name: Verify Setup
+        run: echo "Frontend workspace successfully integrated."
+
+  # ----------------------------------------------------
+  # BACKEND BUILD & TEST JOB
+  # ----------------------------------------------------
+  backend-ci:
+    name: Backend CI (Node.js & TypeScript)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' || 
+      github.event.paths_filter.outputs.backend == 'true'
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install Root & Workspace Dependencies
+        run: npm ci || npm install
+
+      # When source code is added, this can be expanded to run test suite and typescript build compiler checks
+      - name: Verify Setup
+        run: echo "Backend workspace successfully integrated."
+
+  # ----------------------------------------------------
+  # AI INFERENCE SERVICE JOB
+  # ----------------------------------------------------
+  ai-service-ci:
+    name: AI Service CI (FastAPI / Python)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' || 
+      github.event.paths_filter.outputs.ai_service == 'true'
+    defaults:
+      run:
+        working-directory: apps/ai-service
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Linters & Verify Config
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          echo "AI Service pipeline successfully integrated."
