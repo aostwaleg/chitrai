@@ -54,22 +54,38 @@ def encode_image_to_base64(img: Image.Image) -> str:
 def apply_colorize_pipeline(img: Image.Image, style: str, prompt: str) -> Image.Image:
     # 1. Convert PIL to OpenCV format
     img_np = np.array(img)
-    # Extract alpha channel to detect where user drew
-    r, g, b, alpha = cv2.split(img_np)
     
-    # 2. Check if image is blank. If it is, construct a base shape.
-    if np.sum(alpha) == 0:
-        # Create a blank white canvas
-        h, w = img_np.shape[:2]
-        canvas = np.ones((h, w, 3), dtype=np.uint8) * 255
+    h, w = img_np.shape[:2]
+    
+    # 2. Check if image has an alpha channel and extract it
+    if img_np.shape[2] == 4:
+        r, g, b, alpha = cv2.split(img_np)
+        
+        # Check if the canvas is completely blank (all transparent or white)
+        if np.sum(alpha) == 0:
+            # Create a blank white canvas
+            canvas = np.ones((h, w, 3), dtype=np.uint8) * 255
+            sketch_mask = np.zeros((h, w), dtype=np.uint8)
+        else:
+            # Create RGB image and paste a white background in transparent areas
+            canvas = cv2.merge([r, g, b])
+            # Wherever alpha is less than 255, we blend it with solid white
+            alpha_mask = alpha.astype(float) / 255.0
+            for c in range(3):
+                canvas[:, :, c] = (canvas[:, :, c] * alpha_mask + 255 * (1.0 - alpha_mask)).astype(np.uint8)
+            
+            # Sketch strokes are exactly where the drawing is opaque (alpha > 10) AND dark (gray < 240)
+            gray_canvas = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
+            _, dark_mask = cv2.threshold(gray_canvas, 240, 255, cv2.THRESH_BINARY_INV)
+            _, opacity_mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
+            sketch_mask = cv2.bitwise_and(dark_mask, opacity_mask)
     else:
-        # Create RGB image
-        canvas = cv2.merge([r, g, b])
-    
-    h, w = canvas.shape[:2]
+        canvas = img_np
+        # Fallback to standard grayscale thresholding for solid drawings
+        gray_canvas = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
+        _, sketch_mask = cv2.threshold(gray_canvas, 240, 255, cv2.THRESH_BINARY_INV)
     
     # 3. Create a style background using gradients or colored filters
-    # We will pick background hues based on prompt keywords or style
     style = style.lower()
     color_map = {
         "watercolor": ((120, 200, 255), (255, 180, 200)), # light blue to pastel pink
@@ -89,36 +105,24 @@ def apply_colorize_pipeline(img: Image.Image, style: str, prompt: str) -> Image.
             for i in range(3)
         ]
         
-    # 4. Process the user drawings/strokes
-    # Threshold the drawing to get black lines/boundaries
-    gray = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
-    # Binary threshold: anything not pure white is part of sketch
-    _, sketch_mask = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY_INV)
-    
-    # Dilate lines slightly to make outline solid
+    # 4. Dilate lines slightly to make outline solid
     kernel = np.ones((2,2), dtype=np.uint8)
     sketch_mask = cv2.dilate(sketch_mask, kernel, iterations=1)
     
     # Apply stylization to the background (OpenCV filters)
     if style == "watercolor":
-        # Blur the background with bilateral filter to make it look smooth/blended
         bg = cv2.bilateralFilter(bg, 9, 75, 75)
-        # Apply pencil-like texture overlay
         noise = np.random.normal(0, 10, bg.shape).astype(np.int16)
         bg = np.clip(bg.astype(np.int16) + noise, 0, 255).astype(np.uint8)
     elif style == "anime":
-        # High saturation / vivid color cartoon style
         bg = cv2.stylization(bg, sigma_s=60, sigma_r=0.07)
     elif style == "oil":
-        # Oil paint effect
         bg = cv2.xphoto.oilPainting(bg, 4, 1) if hasattr(cv2, 'xphoto') else cv2.medianBlur(bg, 15)
     elif style == "crayon":
-        # Crayon-like sketch effect
         noise = np.random.normal(0, 25, bg.shape).astype(np.int16)
         bg = np.clip(bg.astype(np.int16) + noise, 0, 255).astype(np.uint8)
     
     # 5. Overlay user's sketch strokes back on the colored background
-    # Wherever sketch_mask is active, paint it with a stylized color or deep graphite grey
     deep_grey = np.array([40, 40, 40], dtype=np.uint8)
     for c in range(3):
         bg[:, :, c] = np.where(sketch_mask > 0, deep_grey[c], bg[:, :, c])

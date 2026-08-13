@@ -73,6 +73,33 @@ function awardXP(amount: number): { xpAdded: number; leveledUp: boolean } {
 // ROUTES
 // ----------------------------------------------------
 
+// Helper to get all albums (directories inside DATA_DIR)
+function getAlbumsList(): string[] {
+  try {
+    const items = fs.readdirSync(DATA_DIR);
+    const albums = items.filter(item => {
+      const isDir = fs.statSync(path.join(DATA_DIR, item)).isDirectory();
+      return isDir && !item.startsWith(".");
+    });
+    
+    if (albums.length === 0) {
+      const defaultAlbum = "Default Album";
+      fs.mkdirSync(path.join(DATA_DIR, defaultAlbum), { recursive: true });
+      return [defaultAlbum];
+    }
+    return albums;
+  } catch (error) {
+    return ["Default Album"];
+  }
+}
+
+// Ensure at least one default album folder is initialized
+getAlbumsList();
+
+// ----------------------------------------------------
+// ROUTES
+// ----------------------------------------------------
+
 // 1. Health check
 app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok", service: "chitrai-backend" });
@@ -83,16 +110,76 @@ app.get("/api/user/profile", (req: Request, res: Response) => {
   res.json(mockUser);
 });
 
+// Albums APIs
+app.get("/api/albums", (req: Request, res: Response) => {
+  res.json(getAlbumsList());
+});
+
+app.post("/api/albums/create", (req: Request, res: Response) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: "Missing album name" });
+  }
+  
+  const cleanName = name.replace(/[^a-z0-9\s_-]/gi, "").trim();
+  if (!cleanName) {
+    return res.status(400).json({ error: "Invalid album name" });
+  }
+
+  try {
+    const albumPath = path.join(DATA_DIR, cleanName);
+    if (!fs.existsSync(albumPath)) {
+      fs.mkdirSync(albumPath, { recursive: true });
+    }
+    res.json({ status: "success", albums: getAlbumsList() });
+  } catch (error: any) {
+    res.status(500).json({ error: `Failed to create album: ${error.message}` });
+  }
+});
+
+app.post("/api/albums/rename", (req: Request, res: Response) => {
+  const { oldName, newName } = req.body;
+  if (!oldName || !newName) {
+    return res.status(400).json({ error: "Missing parameters" });
+  }
+
+  const cleanNewName = newName.replace(/[^a-z0-9\s_-]/gi, "").trim();
+  if (!cleanNewName) {
+    return res.status(400).json({ error: "Invalid new name" });
+  }
+
+  try {
+    const oldPath = path.join(DATA_DIR, oldName);
+    const newPath = path.join(DATA_DIR, cleanNewName);
+
+    if (fs.existsSync(oldPath)) {
+      fs.renameSync(oldPath, newPath);
+      res.json({ status: "success", albums: getAlbumsList() });
+    } else {
+      res.status(404).json({ error: "Album not found" });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: `Failed to rename album: ${error.message}` });
+  }
+});
+
 // 3. Save drawing
 app.post("/api/canvas/save", (req: Request, res: Response) => {
-  const { title, image_b64 } = req.body;
+  const { title, image_b64, album } = req.body;
   if (!image_b64) {
     return res.status(400).json({ error: "Missing canvas image data" });
   }
 
+  const targetAlbum = (album || "Default Album").replace(/[^a-z0-9\s_-]/gi, "").trim();
+
   try {
+    const albumDir = path.join(DATA_DIR, targetAlbum);
+    if (!fs.existsSync(albumDir)) {
+      fs.mkdirSync(albumDir, { recursive: true });
+    }
+
     const filename = `${Date.now()}-${(title || "untitled").replace(/[^a-z0-9]/gi, "_").toLowerCase()}.png`;
-    const filepath = path.join(DATA_DIR, filename);
+    const filepath = path.join(albumDir, filename);
     
     // Strip header if present
     const base64Data = image_b64.replace(/^data:image\/png;base64,/, "");
@@ -116,21 +203,47 @@ app.post("/api/canvas/save", (req: Request, res: Response) => {
 
 // 4. Retrieve saved drawing list
 app.get("/api/canvas/list", (req: Request, res: Response) => {
+  const { album } = req.query;
   try {
-    const files = fs.readdirSync(DATA_DIR);
-    const drawings = files
-      .filter(file => file.endsWith(".png"))
-      .map(file => {
-        const stats = fs.statSync(path.join(DATA_DIR, file));
-        return {
-          filename: file,
-          createdAt: stats.birthtime,
-          // Read file content as base64 to serve to frontend
-          image_b64: `data:image/png;base64,${fs.readFileSync(path.join(DATA_DIR, file), "base64")}`
-        };
-      })
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      
+    let drawings: any[] = [];
+    const albums = getAlbumsList();
+
+    // If a specific album is requested, only scan that folder
+    if (album && typeof album === "string" && albums.includes(album)) {
+      const albumDir = path.join(DATA_DIR, album);
+      const files = fs.readdirSync(albumDir);
+      drawings = files
+        .filter(file => file.endsWith(".png"))
+        .map(file => {
+          const stats = fs.statSync(path.join(albumDir, file));
+          return {
+            filename: file,
+            album,
+            createdAt: stats.birthtime,
+            image_b64: `data:image/png;base64,${fs.readFileSync(path.join(albumDir, file), "base64")}`
+          };
+        });
+    } else {
+      // Scan all albums folders recursively
+      albums.forEach(currentAlbum => {
+        const albumDir = path.join(DATA_DIR, currentAlbum);
+        const files = fs.readdirSync(albumDir);
+        const albumDrawings = files
+          .filter(file => file.endsWith(".png"))
+          .map(file => {
+            const stats = fs.statSync(path.join(albumDir, file));
+            return {
+              filename: file,
+              album: currentAlbum,
+              createdAt: stats.birthtime,
+              image_b64: `data:image/png;base64,${fs.readFileSync(path.join(albumDir, file), "base64")}`
+            };
+          });
+        drawings = drawings.concat(albumDrawings);
+      });
+    }
+
+    drawings.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     res.json(drawings);
   } catch (error: any) {
     res.status(500).json({ error: `Failed to retrieve drawings: ${error.message}` });
