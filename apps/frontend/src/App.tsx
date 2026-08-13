@@ -137,7 +137,8 @@ export default function App() {
   };
 
   const handleXpReward = (amount: number, levelUp: boolean, updatedProfile?: UserProfile) => {
-    setXpNotification({ show: true, amount, levelUp });
+    let localLevelUp = levelUp;
+
     if (updatedProfile) {
       setProfile(updatedProfile);
     } else {
@@ -146,13 +147,12 @@ export default function App() {
         let newXp = prev.xp + amount;
         let newLvl = prev.level;
         let nextXp = prev.xpToNextLevel;
-        let upgraded = false;
         
         if (newXp >= nextXp) {
           newXp -= nextXp;
           newLvl += 1;
           nextXp = Math.floor(nextXp * 1.2);
-          upgraded = true;
+          localLevelUp = true;
         }
         
         const tier = newLvl >= 30 ? "senior" : newLvl >= 10 ? "junior" : "learner";
@@ -165,6 +165,8 @@ export default function App() {
         };
       });
     }
+
+    setXpNotification({ show: true, amount, levelUp: localLevelUp });
 
     setTimeout(() => {
       setXpNotification(null);
