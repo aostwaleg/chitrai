@@ -7,7 +7,6 @@ import {
   Download, 
   Save, 
   BookOpen, 
-  Layers, 
   Trophy, 
   Award,
   Zap,
@@ -16,13 +15,11 @@ import {
   FolderPlus,
   Edit3,
   Share2,
-  Smile,
   X,
   Compass,
   Instagram,
   Facebook,
-  Tv,
-  CheckCircle2
+  Tv
 } from "lucide-react";
 
 interface UserProfile {
@@ -355,7 +352,14 @@ export default function App() {
   };
 
   const handleXpReward = (amount: number, levelUp: boolean, updatedProfile?: UserProfile) => {
-    setXpNotification({ show: true, amount, levelUp });
+    let localLevelUp = false;
+    if (!updatedProfile) {
+      const newXp = profile.xp + amount;
+      if (newXp >= profile.xpToNextLevel) {
+        localLevelUp = true;
+      }
+    }
+    setXpNotification({ show: true, amount, levelUp: levelUp || localLevelUp });
     if (updatedProfile) {
       setProfile(updatedProfile);
     } else {
@@ -363,13 +367,11 @@ export default function App() {
         let newXp = prev.xp + amount;
         let newLvl = prev.level;
         let nextXp = prev.xpToNextLevel;
-        let localLevelUp = false;
         
         if (newXp >= nextXp) {
           newXp -= nextXp;
           newLvl += 1;
           nextXp = Math.floor(nextXp * 1.2);
-          localLevelUp = true;
         }
         
         const tier = newLvl >= 30 ? "senior" : newLvl >= 10 ? "junior" : "learner";
@@ -604,7 +606,7 @@ export default function App() {
 
   // Album creation
   const handleCreateAlbum = async () => {
-    const name = prompt("Enter a name for your new Art Album:");
+    const name = window.prompt("Enter a name for your new Art Album:");
     if (!name) return;
     
     try {
@@ -626,7 +628,7 @@ export default function App() {
 
   // Album renaming
   const handleRenameAlbum = async () => {
-    const newName = prompt(`Enter new name for album "${selectedAlbum}":`);
+    const newName = window.prompt(`Enter new name for album "${selectedAlbum}":`);
     if (!newName) return;
     
     try {
