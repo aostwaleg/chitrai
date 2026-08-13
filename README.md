@@ -15,7 +15,7 @@ This repository is set up as an npm workspaces monorepo:
 
 ### Prerequisites
 
-*   Node.js (v18+)
+*   Node.js (v22+)
 *   Python (v3.10+)
 
 ### Setup & Installation
