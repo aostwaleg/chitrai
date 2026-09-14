@@ -3,31 +3,82 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: #e2e1e9;
-  background-color: #0b0a1a;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Default theme values (Dark Mode) */
+  --bg-primary: #0b0a1a;
+  --bg-radial-1: #151336;
+  --bg-radial-2: #07060f;
+  --text-primary: #e2e1e9;
+  --text-secondary: #9ca3af;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --input-bg: rgba(0, 0, 0, 0.2);
+  --tool-bg: rgba(255, 255, 255, 0.05);
+  --tool-border: rgba(255, 255, 255, 0.1);
+  --tool-color: #ffffff;
+  --gallery-preview-bg: #252433;
+  --card-shadow: rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-radial-1: #f1f5f9;
+  --bg-radial-2: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --tool-bg: rgba(0, 0, 0, 0.04);
+  --tool-border: rgba(0, 0, 0, 0.08);
+  --tool-color: #0f172a;
+  --gallery-preview-bg: #e2e8f0;
+  --card-shadow: rgba(15, 23, 42, 0.08);
+  color-scheme: light;
+}
+
+[data-theme="middle"] {
+  --bg-primary: #f5efe6;
+  --bg-radial-1: #eae0d5;
+  --bg-radial-2: #d5cbbd;
+  --text-primary: #4a3e3d;
+  --text-secondary: #7f6c6a;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(74, 62, 61, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --tool-bg: rgba(74, 62, 61, 0.05);
+  --tool-border: rgba(74, 62, 61, 0.12);
+  --tool-color: #4a3e3d;
+  --gallery-preview-bg: #e5dac9;
+  --card-shadow: rgba(74, 62, 61, 0.08);
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 50%, #151336 0%, #07060f 100%);
+  background: radial-gradient(circle at 50% 50%, var(--bg-radial-1) 0%, var(--bg-radial-2) 100%);
+  color: var(--text-primary);
   overflow-x: hidden;
 }
 
 /* Glassmorphic Container */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
+  box-shadow: 0 4px 20px var(--card-shadow);
 }
 
 /* Layout */
@@ -161,9 +212,9 @@ body {
 }
 
 .tool-button {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--tool-bg);
+  border: 1px solid var(--tool-border);
+  color: var(--tool-color);
   padding: 10px 14px;
   border-radius: 12px;
   cursor: pointer;
@@ -175,7 +226,8 @@ body {
 }
 
 .tool-button:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--tool-bg);
+  filter: brightness(1.2) contrast(1.2);
   transform: translateY(-2px);
 }
 
@@ -199,9 +251,9 @@ body {
 }
 
 .color-dot.selected {
-  border-color: #fff;
+  border-color: var(--text-primary);
   transform: scale(1.2);
-  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+  box-shadow: 0 0 10px var(--text-primary);
 }
 
 /* AI Command Center */
@@ -229,11 +281,11 @@ body {
 }
 
 .styled-input {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--input-bg);
+  border: 1px solid var(--tool-border);
   border-radius: 12px;
   padding: 12px 16px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-family: inherit;
   transition: border-color 0.2s;
@@ -252,8 +304,9 @@ body {
 }
 
 .style-pill {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--tool-bg);
+  border: 1px solid var(--tool-border);
+  color: var(--text-primary);
   padding: 10px;
   border-radius: 12px;
   text-align: center;
@@ -263,7 +316,8 @@ body {
 }
 
 .style-pill:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tool-bg);
+  filter: brightness(1.2) contrast(1.2);
 }
 
 .style-pill.selected {
@@ -330,7 +384,7 @@ body {
 .gallery-preview {
   width: 100%;
   height: 150px;
-  background: #252433;
+  background: var(--gallery-preview-bg);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -354,8 +408,9 @@ body {
 }
 
 .badge {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--tool-bg);
+  border: 1px solid var(--tool-border);
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 30px;
   font-size: 0.75rem;

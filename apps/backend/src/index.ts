@@ -309,7 +309,7 @@ app.post("/api/ai/outline", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Chitrai Backend running on http://localhost:${PORT}`);
+app.listen(Number(PORT), "0.0.0.0", () => {
+  console.log(`Chitrai Backend running on http://0.0.0.0:${PORT}`);
   console.log(`Connected to AI Service at ${AI_SERVICE_URL}`);
 });

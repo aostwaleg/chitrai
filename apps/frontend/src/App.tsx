@@ -19,7 +19,10 @@ import {
   Compass,
   Instagram,
   Facebook,
-  Tv
+  Tv,
+  Sun,
+  Moon,
+  Coffee
 } from "lucide-react";
 
 interface UserProfile {
@@ -266,7 +269,18 @@ export default function App() {
   // XP notification trigger
   const [xpNotification, setXpNotification] = useState<{show: boolean, amount: number, levelUp: boolean} | null>(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  // Theme management
+  const [theme, setTheme] = useState<"dark" | "light" | "middle">(() => {
+    return (localStorage.getItem("theme") as "dark" | "light" | "middle") || "dark";
+  });
+
+  const API_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5001`;
+
+  // Apply theme when it changes
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   // Initialize Canvas
   useEffect(() => {
@@ -781,6 +795,34 @@ export default function App() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* Theme switcher */}
+            <div className="glass" style={{ display: "flex", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <button 
+                onClick={() => setTheme("light")}
+                className={`tool-button ${theme === "light" ? "active" : ""}`}
+                style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "0.85rem", gap: "4px" }}
+              >
+                <Sun size={14} />
+                Light
+              </button>
+              <button 
+                onClick={() => setTheme("dark")}
+                className={`tool-button ${theme === "dark" ? "active" : ""}`}
+                style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "0.85rem", gap: "4px" }}
+              >
+                <Moon size={14} />
+                Dark
+              </button>
+              <button 
+                onClick={() => setTheme("middle")}
+                className={`tool-button ${theme === "middle" ? "active" : ""}`}
+                style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "0.85rem", gap: "4px" }}
+              >
+                <Coffee size={14} />
+                Middle
+              </button>
+            </div>
+
             {/* Simple mode switch */}
             <div className="glass" style={{ display: "flex", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.12)" }}>
               <button 
